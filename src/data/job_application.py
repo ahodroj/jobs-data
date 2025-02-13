@@ -1,3 +1,4 @@
+import re
 from src.data.gmail_message import GmailMessage
 
 
@@ -12,7 +13,11 @@ class JobApplication():
         self.accept_date = ""
         company, position = self._get_company_and_position()
         self.company = company
+        self.company_id = ""
+        self.company_website = ""
+        self.company_name_external = ""
         self.position = position
+        self.original_sender = self.gmail_message.email_from
     
     def _get_company_and_position(self):
         position = "()"
@@ -28,7 +33,9 @@ class JobApplication():
                       "lever.co": "lever", 
                       "ashbyhq.com" : "ashby", 
                       "myworkday.com" : "workday", 
-                      "greenhouse-mail.io": "greenhouse"
+                      "greenhouse-mail.io": "greenhouse",
+                      "@ icims" : "icims",
+                      "rippling.com" : "rippling"
                       }
         for key in job_boards:
             if key in source:
@@ -38,29 +45,49 @@ class JobApplication():
 
     def _get_company_name(self):
         subject = self.gmail_message.email_subject
-        sender = self.gmail_message.email_from 
+        sender = self.gmail_message.email_from
+        company_name = ""
         
         if ("LinkedIn" in sender or "greenhouse" in sender):
-            return self._get_company_from_subject()
-            
-        if "lever.co" in sender: 
-            return sender.replace(" <no-reply@hire.lever.co>", "")
+            company_name = subject   
+        elif "lever.co" in sender: 
+            company_name = sender.replace(" <no-reply@hire.lever.co>", "")
+        elif "@myworkday.com" in sender: 
+            company_name = sender.replace("@myworkday.com", "")
+        elif "ashbyhq.com" in sender:
+            company_name = sender.replace(" Hiring Team <no-reply@ashbyhq.com>", "")
+        elif "ats.rippling.com" in sender:
+            company_name = sender.split(" <no-reply@ats.rippling.com>")[0]
+        elif "talent.icims.com" in sender:
+            company_name = sender.split(" @ icims")[0].replace('"', '')
+        else:
+            company_name = subject 
         
-        if "@myworkday.com" in sender: 
-            return sender.replace("@myworkday.com", "")
+        # clean up subject from common strings 
+        string_list = [
+            "Thank you for applying to ",
+            "Thank you for your application at ",
+            "Ali, your application was sent to ",
+            "Thanks for your application to ",
+            "Thanks for applying to ",
+            "Ali, thank you for your application to ",
+            "Thank you for your application to ",
+            "Thank you for considering ",
+            ", Ali",
+            " // Thank you for applying!"
+            " - Thank you for your application Ali!",
+            " Thank you for your application!",
+            "Thank You for Your Interest in ",
+            "Additional Information Request for "
+            "!"
+        ]
+        pattern = '|'.join(map(re.escape, string_list))
+        company_name = re.sub(pattern, '', company_name)
         
-        if "ashbyhq.com" in sender:
-            return sender.replace(" Hiring Team <no-reply@ashbyhq.com>", "")
-        
-        return subject
-
-    def _get_company_from_subject(self):
-        subject = self.gmail_message.email_subject
-        patterns = {" at " : 1, " with ": 1, " to " : 1, " in " : 1, " Application Update " : 0}
+        patterns = {" at " : 1, " with ": 1, " to " : 1, " in " : 1, " Application Update " : 0, " - " : 0}
         for p in patterns:
-            chunks = subject.split(p)
+            chunks = company_name.split(p)
             if len(chunks) > 1:
                 index = patterns[p]
                 return chunks[index]
-        return subject 
- 
+        return company_name

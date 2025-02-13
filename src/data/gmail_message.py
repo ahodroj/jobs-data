@@ -1,8 +1,7 @@
 import mailbox 
 import bs4
 from datetime import datetime
-
-
+import email.header 
 
 
 class GmailMessage():
@@ -14,7 +13,10 @@ class GmailMessage():
         self.email_date = self._try_parsing_date()
         self.email_from = self.email_data['From']
         self.email_to = self.email_data['To']
-        self.email_subject = self.email_data['Subject'].replace("\r\n", "")
+        subj = self.email_data['Subject'].replace("\r\n", "")
+        if "utf-" in subj.lower():
+            subj = self._decode_mime_subject_string(subj)
+        self.email_subject = subj
         self.email_text = self.read_email_payload() 
 
     def read_email_payload(self):
@@ -24,6 +26,17 @@ class GmailMessage():
         else:
             email_messages = [email_payload]
         return [self._read_email_text(msg) for msg in email_messages]
+
+    def _decode_mime_subject_string(self, s):
+        decoded_parts = email.header.decode_header(s)
+        final_string = ''
+        for part, encoding in decoded_parts:
+            if encoding:
+                final_string += part.decode(encoding)
+            else:
+                final_string += part.decode('utf-8')
+        return final_string
+
 
     def _get_email_messages(self, email_payload):
         for msg in email_payload:
@@ -41,9 +54,7 @@ class GmailMessage():
             return bs4.BeautifulSoup(html, 'lxml').body.get_text(' ', strip=True)
         except AttributeError: # message contents empty
             return None
-
-
-        
+               
     def _try_parsing_date(self):
         date_str = self.email_data['Date']
         date_str =  " ".join(date_str.replace("  ", " ").split(" ")[0:4])

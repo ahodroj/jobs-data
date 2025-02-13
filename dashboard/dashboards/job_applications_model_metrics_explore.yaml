@@ -1,0 +1,10 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+title: "Job Applications Model Metrics dashboard"
+metrics_view: job_applications_model_metrics
+
+dimensions: '*'
+measures: '*'

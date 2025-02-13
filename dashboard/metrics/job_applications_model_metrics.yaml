@@ -1,0 +1,42 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# This file was generated using AI.
+
+version: 1
+type: metrics_view 
+
+display_name: Job Applications Model Metrics
+model: job_applications_model
+timeseries: apply_date
+
+dimensions:
+  - name: company
+    display_name: Company
+    column: company
+
+measures:
+  - name: total_applications_measure
+    display_name: Total Applications
+    expression: COUNT(*)
+    description: Total number of job applications recorded in the model.
+    format_preset: humanize
+  - name: unique_companies_measure
+    display_name: Unique Companies
+    expression: COUNT(DISTINCT company)
+    description: Number of unique companies to which applications have been made.
+    format_preset: humanize
+  - name: applications_with_rejections_measure
+    display_name: Applications with Rejections
+    expression: COUNT(reject_date)
+    description: Total number of applications that have a recorded rejection date.
+    format_preset: humanize
+  - name: total_rejections_measure
+    display_name: Total Rejections
+    expression: COUNT(reject_date)
+    description: Total number of rejections recorded in the model.
+    format_preset: humanize
+  - name: rejected_applications_ratio_measure
+    display_name: Rejected Applications Ratio
+    expression: COUNT(reject_date) * 1.0 / COUNT(*)
+    description: Ratio of applications that have been rejected to total applications.
+    format_preset: humanize
